@@ -183,7 +183,7 @@ partial class Form1
         cmbKeyToPress.Location = new Point(120, 95);
         cmbKeyToPress.Size = new Size(90, 23);
         cmbKeyToPress.DropDownStyle = ComboBoxStyle.DropDownList;
-        cmbKeyToPress.Items.AddRange(new object[] { "Enter", "F5", "F1", "F2", "F3", "F4", "F6", "F7", "F8", "F9", "F10", "F11", "F12", "Space", "Esc", "Tab" });
+        cmbKeyToPress.Items.AddRange(new object[] { "Enter", "F5", "F1", "F2", "F3", "F4", "F9", "F10", "F11", "F12", "Space", "Esc", "Tab" });
         cmbKeyToPress.SelectedIndex = 0;
 
         // btnAddKeyStep
