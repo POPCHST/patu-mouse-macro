@@ -30,18 +30,19 @@ partial class Form1
 
     private GroupBox grpCapture;
     private Button btnCapture;
-    private Label lblTargetInfo;
-    private Label lblAdvancedHint;
-    private Label lblX;
-    private NumericUpDown numX;
-    private Label lblY;
-    private NumericUpDown numY;
+    private Label lblStepDelay;
+    private NumericUpDown numStepDelay;
+    private ListBox lstSteps;
+    private Button btnRemoveStep;
+    private Button btnClearSteps;
+    private Label lblStepCount;
 
     private GroupBox grpClickOptions;
     private Label lblButton;
     private ComboBox cmbButton;
     private Label lblInterval;
     private NumericUpDown numInterval;
+    private Label lblIntervalHint;
     private CheckBox chkJitter;
 
     private GroupBox grpRepeat;
@@ -70,18 +71,19 @@ partial class Form1
 
         grpCapture = new GroupBox();
         btnCapture = new Button();
-        lblTargetInfo = new Label();
-        lblAdvancedHint = new Label();
-        lblX = new Label();
-        numX = new NumericUpDown();
-        lblY = new Label();
-        numY = new NumericUpDown();
+        lblStepDelay = new Label();
+        numStepDelay = new NumericUpDown();
+        lstSteps = new ListBox();
+        btnRemoveStep = new Button();
+        btnClearSteps = new Button();
+        lblStepCount = new Label();
 
         grpClickOptions = new GroupBox();
         lblButton = new Label();
         cmbButton = new ComboBox();
         lblInterval = new Label();
         numInterval = new NumericUpDown();
+        lblIntervalHint = new Label();
         chkJitter = new CheckBox();
 
         grpRepeat = new GroupBox();
@@ -100,8 +102,7 @@ partial class Form1
         grpCapture.SuspendLayout();
         grpClickOptions.SuspendLayout();
         grpRepeat.SuspendLayout();
-        ((System.ComponentModel.ISupportInitialize)numX).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)numY).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)numStepDelay).BeginInit();
         ((System.ComponentModel.ISupportInitialize)numInterval).BeginInit();
         ((System.ComponentModel.ISupportInitialize)numRepeatCount).BeginInit();
         SuspendLayout();
@@ -125,82 +126,75 @@ partial class Form1
         radCurrentPos.Checked = true;
 
         // radFixedPos
-        radFixedPos.Text = "คลิกตำแหน่งเดิมซ้ำๆ (แนะนำสำหรับปุ่ม Start ในเกม)";
+        radFixedPos.Text = "คลิกตามลำดับจุดที่ตั้งไว้ (เพิ่มได้หลายจุด)";
         radFixedPos.Location = new Point(15, 50);
         radFixedPos.Size = new Size(386, 20);
 
         // grpCapture
-        grpCapture.Text = "ขั้นตอนที่ 2 — ตั้งตำแหน่งคลิก (ใช้เมื่อเลือกคลิกตำแหน่งเดิม)";
+        grpCapture.Text = "ขั้นตอนที่ 2 — ตั้งลำดับจุดคลิก (ใช้เมื่อเลือกคลิกตามลำดับจุด)";
         grpCapture.Location = new Point(12, 134);
-        grpCapture.Size = new Size(416, 150);
+        grpCapture.Size = new Size(416, 225);
         grpCapture.Controls.Add(btnCapture);
-        grpCapture.Controls.Add(lblTargetInfo);
-        grpCapture.Controls.Add(lblAdvancedHint);
-        grpCapture.Controls.Add(lblX);
-        grpCapture.Controls.Add(numX);
-        grpCapture.Controls.Add(lblY);
-        grpCapture.Controls.Add(numY);
+        grpCapture.Controls.Add(lblStepDelay);
+        grpCapture.Controls.Add(numStepDelay);
+        grpCapture.Controls.Add(lstSteps);
+        grpCapture.Controls.Add(btnRemoveStep);
+        grpCapture.Controls.Add(btnClearSteps);
+        grpCapture.Controls.Add(lblStepCount);
 
         // btnCapture
-        btnCapture.Text = "📍 วางเมาส์บนปุ่มในเกม แล้วกดตรงนี้ (หรือกด F8)";
+        btnCapture.Text = "📍 ชี้เมาส์ที่ปุ่มในเกม แล้วกดตรงนี้เพื่อเพิ่มจุด (F8)";
         btnCapture.Location = new Point(15, 25);
         btnCapture.Size = new Size(386, 34);
         btnCapture.Enabled = false;
         btnCapture.BackColor = Color.FromArgb(214, 232, 255);
         btnCapture.Font = new Font(Font, FontStyle.Bold);
 
-        // lblTargetInfo
-        lblTargetInfo.Text = "เป้าหมาย: ยังไม่ได้ตั้งตำแหน่ง";
-        lblTargetInfo.Location = new Point(15, 65);
-        lblTargetInfo.Size = new Size(386, 36);
-        lblTargetInfo.ForeColor = Color.DimGray;
+        // lblStepDelay
+        lblStepDelay.Text = "หน่วงเวลาหลังจุดนี้ (ms):";
+        lblStepDelay.Location = new Point(15, 66);
+        lblStepDelay.Size = new Size(155, 20);
+        lblStepDelay.TextAlign = ContentAlignment.MiddleLeft;
 
-        // lblAdvancedHint
-        lblAdvancedHint.Text = "ปรับละเอียด (ถ้าจำเป็น):";
-        lblAdvancedHint.Location = new Point(15, 105);
-        lblAdvancedHint.Size = new Size(150, 18);
-        lblAdvancedHint.ForeColor = Color.Gray;
+        // numStepDelay
+        numStepDelay.Location = new Point(175, 63);
+        numStepDelay.Size = new Size(100, 23);
+        numStepDelay.Minimum = 10;
+        numStepDelay.Maximum = 600000;
+        numStepDelay.Value = 1000;
+        numStepDelay.ThousandsSeparator = true;
 
-        // lblX
-        lblX.Text = "X (%):";
-        lblX.Location = new Point(15, 125);
-        lblX.Size = new Size(45, 20);
-        lblX.TextAlign = ContentAlignment.MiddleLeft;
-        lblX.ForeColor = Color.Gray;
+        // lstSteps
+        lstSteps.Location = new Point(15, 93);
+        lstSteps.Size = new Size(386, 82);
+        lstSteps.IntegralHeight = false;
 
-        // numX
-        numX.Location = new Point(60, 123);
-        numX.Size = new Size(70, 23);
-        numX.Minimum = 0;
-        numX.Maximum = 100;
-        numX.DecimalPlaces = 1;
-        numX.Increment = 0.1m;
-        numX.Enabled = false;
+        // btnRemoveStep
+        btnRemoveStep.Text = "ลบจุดที่เลือก";
+        btnRemoveStep.Location = new Point(15, 183);
+        btnRemoveStep.Size = new Size(120, 27);
 
-        // lblY
-        lblY.Text = "Y (%):";
-        lblY.Location = new Point(140, 125);
-        lblY.Size = new Size(45, 20);
-        lblY.TextAlign = ContentAlignment.MiddleLeft;
-        lblY.ForeColor = Color.Gray;
+        // btnClearSteps
+        btnClearSteps.Text = "ล้างทั้งหมด";
+        btnClearSteps.Location = new Point(143, 183);
+        btnClearSteps.Size = new Size(100, 27);
 
-        // numY
-        numY.Location = new Point(185, 123);
-        numY.Size = new Size(70, 23);
-        numY.Minimum = 0;
-        numY.Maximum = 100;
-        numY.DecimalPlaces = 1;
-        numY.Increment = 0.1m;
-        numY.Enabled = false;
+        // lblStepCount
+        lblStepCount.Text = "ทั้งหมด: 0 จุด";
+        lblStepCount.Location = new Point(255, 188);
+        lblStepCount.Size = new Size(146, 20);
+        lblStepCount.ForeColor = Color.DimGray;
+        lblStepCount.TextAlign = ContentAlignment.MiddleRight;
 
         // grpClickOptions
         grpClickOptions.Text = "ขั้นตอนที่ 3 — ตั้งค่าการคลิก";
-        grpClickOptions.Location = new Point(12, 294);
-        grpClickOptions.Size = new Size(416, 115);
+        grpClickOptions.Location = new Point(12, 369);
+        grpClickOptions.Size = new Size(416, 150);
         grpClickOptions.Controls.Add(lblButton);
         grpClickOptions.Controls.Add(cmbButton);
         grpClickOptions.Controls.Add(lblInterval);
         grpClickOptions.Controls.Add(numInterval);
+        grpClickOptions.Controls.Add(lblIntervalHint);
         grpClickOptions.Controls.Add(chkJitter);
 
         // lblButton
@@ -230,15 +224,21 @@ partial class Form1
         numInterval.Value = 1000;
         numInterval.ThousandsSeparator = true;
 
+        // lblIntervalHint
+        lblIntervalHint.Text = "* ใช้เฉพาะโหมด \"คลิกตามตำแหน่งเมาส์\" — โหมดคลิกตามลำดับจุดใช้ค่าหน่วงของแต่ละจุดแทน";
+        lblIntervalHint.Location = new Point(15, 82);
+        lblIntervalHint.Size = new Size(386, 32);
+        lblIntervalHint.ForeColor = Color.Gray;
+
         // chkJitter
         chkJitter.Text = "สุ่มเวลาคลิกเล็กน้อย (กันรูปแบบเวลาเป๊ะเกินไป)";
-        chkJitter.Location = new Point(15, 85);
+        chkJitter.Location = new Point(15, 118);
         chkJitter.Size = new Size(386, 20);
         chkJitter.Checked = true;
 
         // grpRepeat
         grpRepeat.Text = "ขั้นตอนที่ 4 — การทำซ้ำ";
-        grpRepeat.Location = new Point(12, 419);
+        grpRepeat.Location = new Point(12, 529);
         grpRepeat.Size = new Size(416, 72);
         grpRepeat.Controls.Add(radRepeatForever);
         grpRepeat.Controls.Add(radRepeatCount);
@@ -252,12 +252,12 @@ partial class Form1
         radRepeatForever.Checked = true;
 
         // radRepeatCount
-        radRepeatCount.Text = "ทำซ้ำจำนวน:";
+        radRepeatCount.Text = "ทำซ้ำจำนวน (รอบ):";
         radRepeatCount.Location = new Point(15, 45);
-        radRepeatCount.Size = new Size(110, 20);
+        radRepeatCount.Size = new Size(140, 20);
 
         // numRepeatCount
-        numRepeatCount.Location = new Point(130, 43);
+        numRepeatCount.Location = new Point(160, 43);
         numRepeatCount.Size = new Size(80, 23);
         numRepeatCount.Minimum = 1;
         numRepeatCount.Maximum = 1000000;
@@ -265,47 +265,47 @@ partial class Form1
         numRepeatCount.Enabled = false;
 
         // lblTimes
-        lblTimes.Text = "ครั้ง";
-        lblTimes.Location = new Point(215, 45);
+        lblTimes.Text = "รอบ";
+        lblTimes.Location = new Point(245, 45);
         lblTimes.Size = new Size(40, 20);
         lblTimes.TextAlign = ContentAlignment.MiddleLeft;
 
         // lblStatus
         lblStatus.Text = "สถานะ: หยุด";
-        lblStatus.Location = new Point(15, 501);
+        lblStatus.Location = new Point(15, 611);
         lblStatus.Size = new Size(400, 20);
         lblStatus.Font = new Font(Font, FontStyle.Bold);
 
         // lblClickCount
         lblClickCount.Text = "จำนวนคลิก: 0";
-        lblClickCount.Location = new Point(15, 523);
+        lblClickCount.Location = new Point(15, 633);
         lblClickCount.Size = new Size(400, 20);
 
         // btnStart
         btnStart.Text = "▶ Start (F6)";
-        btnStart.Location = new Point(15, 553);
+        btnStart.Location = new Point(15, 663);
         btnStart.Size = new Size(196, 44);
         btnStart.BackColor = Color.FromArgb(198, 239, 206);
         btnStart.Font = new Font(Font.FontFamily, 11f, FontStyle.Bold);
 
         // btnStop
         btnStop.Text = "■ Stop (F7)";
-        btnStop.Location = new Point(221, 553);
+        btnStop.Location = new Point(221, 663);
         btnStop.Size = new Size(196, 44);
         btnStop.Enabled = false;
         btnStop.BackColor = Color.FromArgb(255, 199, 206);
         btnStop.Font = new Font(Font.FontFamily, 11f, FontStyle.Bold);
 
         // lblHotkeyInfo
-        lblHotkeyInfo.Text = "Hotkey (ใช้ได้แม้อยู่ในเกม): F6 = Start, F7 = Stop, F8 = จับตำแหน่ง";
-        lblHotkeyInfo.Location = new Point(15, 607);
+        lblHotkeyInfo.Text = "Hotkey (ใช้ได้แม้อยู่ในเกม): F6 = Start, F7 = Stop, F8 = เพิ่มจุด";
+        lblHotkeyInfo.Location = new Point(15, 717);
         lblHotkeyInfo.Size = new Size(400, 20);
         lblHotkeyInfo.ForeColor = Color.Gray;
 
         // Form1
         AutoScaleMode = AutoScaleMode.Font;
         Font = new Font("Tahoma", 9f);
-        ClientSize = new Size(440, 640);
+        ClientSize = new Size(440, 750);
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         Text = "patu.v1-mouse-macro";
@@ -324,8 +324,7 @@ partial class Form1
         grpCapture.ResumeLayout(false);
         grpClickOptions.ResumeLayout(false);
         grpRepeat.ResumeLayout(false);
-        ((System.ComponentModel.ISupportInitialize)numX).EndInit();
-        ((System.ComponentModel.ISupportInitialize)numY).EndInit();
+        ((System.ComponentModel.ISupportInitialize)numStepDelay).EndInit();
         ((System.ComponentModel.ISupportInitialize)numInterval).EndInit();
         ((System.ComponentModel.ISupportInitialize)numRepeatCount).EndInit();
         ResumeLayout(false);

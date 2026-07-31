@@ -1,3 +1,6 @@
+using System.Media;
+using System.Runtime.InteropServices;
+
 namespace MouseMacro;
 
 public partial class Form1 : Form
@@ -9,16 +12,18 @@ public partial class Form1 : Form
     private const int JitterPercent = 15;
 
     private readonly System.Windows.Forms.Timer _clickTimer = new();
-    private readonly MacroTarget _target = new();
+    private readonly List<MacroStep> _steps = new();
     private readonly Random _random = new();
+    private int _currentStepIndex;
+    private int _completedPasses;
     private int _clicksDone;
     private bool _isRunning;
-    private bool _suppressPercentEvents;
 
     public Form1()
     {
         InitializeComponent();
         Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
+        Text = $"{Text} v{Application.ProductVersion}";
 
         _clickTimer.Tick += ClickTimer_Tick;
 
@@ -26,11 +31,11 @@ public partial class Form1 : Form
         btnStop.Click += (_, _) => StopMacro();
         btnCapture.Click += (_, _) => CaptureAtCursor();
         btnHelp.Click += (_, _) => ShowHelp();
+        btnRemoveStep.Click += (_, _) => RemoveSelectedStep();
+        btnClearSteps.Click += (_, _) => ClearSteps();
 
         radFixedPos.CheckedChanged += UpdatePositionControlsEnabled;
         radRepeatCount.CheckedChanged += (_, _) => numRepeatCount.Enabled = radRepeatCount.Checked;
-        numX.ValueChanged += (_, _) => ApplyManualPercentEdit();
-        numY.ValueChanged += (_, _) => ApplyManualPercentEdit();
 
         UpdatePositionControlsEnabled(this, EventArgs.Empty);
         numRepeatCount.Enabled = radRepeatCount.Checked;
@@ -86,38 +91,52 @@ public partial class Form1 : Form
         var captured = MacroTarget.CaptureAt(Cursor.Position);
         if (captured is null)
         {
-            lblTargetInfo.Text = "จับตำแหน่งไม่สำเร็จ ลองเอาเมาส์ไปชี้ในหน้าต่างเกมแล้วกด F8 อีกครั้ง";
+            lblStepCount.Text = "จับตำแหน่งไม่สำเร็จ ลองใหม่";
             return;
         }
 
-        _target.CopyHandleFrom(captured);
-        _target.SetRelative(captured.RelativeX, captured.RelativeY);
-
-        _suppressPercentEvents = true;
-        numX.Value = (decimal)Math.Clamp(captured.RelativeX * 100, 0, 100);
-        numY.Value = (decimal)Math.Clamp(captured.RelativeY * 100, 0, 100);
-        _suppressPercentEvents = false;
+        _steps.Add(new MacroStep { Target = captured, DelayMs = (int)numStepDelay.Value });
+        RefreshStepList();
 
         radFixedPos.Checked = true;
-        lblTargetInfo.Text = $"เป้าหมาย: \"{captured.Title}\" ที่ตำแหน่ง {captured.RelativeX * 100:0.0}%, {captured.RelativeY * 100:0.0}% ของหน้าต่าง";
     }
 
-    private void ApplyManualPercentEdit()
+    private void RemoveSelectedStep()
     {
-        if (_suppressPercentEvents || !_target.IsCaptured)
+        if (lstSteps.SelectedIndex < 0)
         {
             return;
         }
 
-        _target.SetRelative((double)(numX.Value / 100m), (double)(numY.Value / 100m));
+        _steps.RemoveAt(lstSteps.SelectedIndex);
+        RefreshStepList();
+    }
+
+    private void ClearSteps()
+    {
+        _steps.Clear();
+        RefreshStepList();
+    }
+
+    private void RefreshStepList()
+    {
+        lstSteps.Items.Clear();
+        foreach (var step in _steps)
+        {
+            lstSteps.Items.Add(step.ToString()!);
+        }
+
+        lblStepCount.Text = $"ทั้งหมด: {_steps.Count} จุด";
     }
 
     private void UpdatePositionControlsEnabled(object? sender, EventArgs e)
     {
         var fixedMode = radFixedPos.Checked;
-        numX.Enabled = fixedMode;
-        numY.Enabled = fixedMode;
         btnCapture.Enabled = fixedMode;
+        numStepDelay.Enabled = fixedMode;
+        lstSteps.Enabled = fixedMode;
+        btnRemoveStep.Enabled = fixedMode;
+        btnClearSteps.Enabled = fixedMode;
     }
 
     private void StartMacro()
@@ -127,23 +146,26 @@ public partial class Form1 : Form
             return;
         }
 
-        if (radFixedPos.Checked && !_target.IsCaptured)
+        if (radFixedPos.Checked && _steps.Count == 0)
         {
-            lblTargetInfo.Text = "กรุณาจับตำแหน่งก่อน (เอาเมาส์ชี้ปุ่มในเกม แล้วกด F8)";
+            lblStepCount.Text = "กรุณาเพิ่มจุดคลิกก่อน (เอาเมาส์ชี้ปุ่มในเกม แล้วกด F8)";
             return;
         }
 
         _isRunning = true;
         _clicksDone = 0;
-        _clickTimer.Interval = GetNextIntervalMs();
+        _currentStepIndex = 0;
+        _completedPasses = 0;
+        _clickTimer.Interval = GetNextIntervalMs(radFixedPos.Checked ? _steps[0].DelayMs : (int)numInterval.Value);
         _clickTimer.Start();
+        lblStatus.ForeColor = Color.Green;
         lblStatus.Text = "สถานะ: กำลังทำงาน...";
         lblClickCount.Text = "จำนวนคลิก: 0";
         btnStart.Enabled = false;
         btnStop.Enabled = true;
     }
 
-    private void StopMacro()
+    private void StopMacro(bool isError = false)
     {
         if (!_isRunning)
         {
@@ -152,27 +174,56 @@ public partial class Form1 : Form
 
         _isRunning = false;
         _clickTimer.Stop();
-        lblStatus.Text = "สถานะ: หยุดแล้ว";
         btnStart.Enabled = true;
         btnStop.Enabled = false;
+
+        if (isError)
+        {
+            lblStatus.ForeColor = Color.Red;
+            lblStatus.Text = "⚠ หยุดทำงาน: ไม่พบหน้าต่างเกมที่จับตำแหน่งไว้ (ปิดไปแล้ว?) — กด F8 จับตำแหน่งใหม่";
+            FlashTaskbar();
+            SystemSounds.Exclamation.Play();
+        }
+        else
+        {
+            lblStatus.ForeColor = SystemColors.ControlText;
+            lblStatus.Text = "สถานะ: หยุดแล้ว";
+        }
+    }
+
+    private void FlashTaskbar()
+    {
+        var info = new NativeMethods.FLASHWINFO
+        {
+            hwnd = Handle,
+            dwFlags = NativeMethods.FLASHW_ALL | NativeMethods.FLASHW_TIMERNOFG,
+            uCount = uint.MaxValue,
+            dwTimeout = 0
+        };
+        info.cbSize = (uint)Marshal.SizeOf(info);
+        NativeMethods.FlashWindowEx(ref info);
     }
 
     private void ClickTimer_Tick(object? sender, EventArgs e)
     {
         Point position;
+        int delayForNextTick;
 
         if (radFixedPos.Checked)
         {
-            if (!_target.TryResolveScreenPosition(out position))
+            var step = _steps[_currentStepIndex];
+            if (!step.Target.TryResolveScreenPosition(out position))
             {
-                StopMacro();
-                lblStatus.Text = "หยุดทำงาน: ไม่พบหน้าต่างเกมที่จับตำแหน่งไว้ (ปิดไปแล้ว?)";
+                StopMacro(isError: true);
                 return;
             }
+
+            delayForNextTick = step.DelayMs;
         }
         else
         {
             position = Cursor.Position;
+            delayForNextTick = (int)numInterval.Value;
         }
 
         var button = cmbButton.SelectedIndex switch
@@ -186,18 +237,32 @@ public partial class Form1 : Form
         _clicksDone++;
         lblClickCount.Text = $"จำนวนคลิก: {_clicksDone}";
 
-        if (radRepeatCount.Checked && _clicksDone >= numRepeatCount.Value)
+        if (radFixedPos.Checked)
+        {
+            _currentStepIndex++;
+            if (_currentStepIndex >= _steps.Count)
+            {
+                _currentStepIndex = 0;
+                _completedPasses++;
+
+                if (radRepeatCount.Checked && _completedPasses >= numRepeatCount.Value)
+                {
+                    StopMacro();
+                    return;
+                }
+            }
+        }
+        else if (radRepeatCount.Checked && _clicksDone >= numRepeatCount.Value)
         {
             StopMacro();
             return;
         }
 
-        _clickTimer.Interval = GetNextIntervalMs();
+        _clickTimer.Interval = GetNextIntervalMs(delayForNextTick);
     }
 
-    private int GetNextIntervalMs()
+    private int GetNextIntervalMs(int baseMs)
     {
-        var baseMs = (int)numInterval.Value;
         if (!chkJitter.Checked)
         {
             return baseMs;
@@ -205,6 +270,6 @@ public partial class Form1 : Form
 
         var variation = Math.Max(1, baseMs * JitterPercent / 100);
         var jittered = baseMs + _random.Next(-variation, variation + 1);
-        return Math.Max((int)numInterval.Minimum, jittered);
+        return Math.Max(10, jittered);
     }
 }

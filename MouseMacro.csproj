@@ -8,6 +8,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>patu.v1-mouse-macro</AssemblyName>
     <ApplicationIcon>icons\app.ico</ApplicationIcon>
+    <Version>1.0.2</Version>
+    <AssemblyVersion>1.0.2.0</AssemblyVersion>
+    <FileVersion>1.0.2.0</FileVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
 </Project>
