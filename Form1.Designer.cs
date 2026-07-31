@@ -32,6 +32,9 @@ partial class Form1
     private Button btnCapture;
     private Label lblStepDelay;
     private NumericUpDown numStepDelay;
+    private Label lblKeyPress;
+    private ComboBox cmbKeyToPress;
+    private Button btnAddKeyStep;
     private ListBox lstSteps;
     private Button btnRemoveStep;
     private Button btnClearSteps;
@@ -73,6 +76,9 @@ partial class Form1
         btnCapture = new Button();
         lblStepDelay = new Label();
         numStepDelay = new NumericUpDown();
+        lblKeyPress = new Label();
+        cmbKeyToPress = new ComboBox();
+        btnAddKeyStep = new Button();
         lstSteps = new ListBox();
         btnRemoveStep = new Button();
         btnClearSteps = new Button();
@@ -133,10 +139,13 @@ partial class Form1
         // grpCapture
         grpCapture.Text = "ขั้นตอนที่ 2 — ตั้งลำดับจุดคลิก (ใช้เมื่อเลือกคลิกตามลำดับจุด)";
         grpCapture.Location = new Point(12, 134);
-        grpCapture.Size = new Size(416, 225);
+        grpCapture.Size = new Size(416, 260);
         grpCapture.Controls.Add(btnCapture);
         grpCapture.Controls.Add(lblStepDelay);
         grpCapture.Controls.Add(numStepDelay);
+        grpCapture.Controls.Add(lblKeyPress);
+        grpCapture.Controls.Add(cmbKeyToPress);
+        grpCapture.Controls.Add(btnAddKeyStep);
         grpCapture.Controls.Add(lstSteps);
         grpCapture.Controls.Add(btnRemoveStep);
         grpCapture.Controls.Add(btnClearSteps);
@@ -164,31 +173,49 @@ partial class Form1
         numStepDelay.Value = 1000;
         numStepDelay.ThousandsSeparator = true;
 
+        // lblKeyPress
+        lblKeyPress.Text = "หรือกดคีย์แทน:";
+        lblKeyPress.Location = new Point(15, 98);
+        lblKeyPress.Size = new Size(105, 20);
+        lblKeyPress.TextAlign = ContentAlignment.MiddleLeft;
+
+        // cmbKeyToPress
+        cmbKeyToPress.Location = new Point(120, 95);
+        cmbKeyToPress.Size = new Size(90, 23);
+        cmbKeyToPress.DropDownStyle = ComboBoxStyle.DropDownList;
+        cmbKeyToPress.Items.AddRange(new object[] { "Enter", "F5", "F1", "F2", "F3", "F4", "F6", "F7", "F8", "F9", "F10", "F11", "F12", "Space", "Esc", "Tab" });
+        cmbKeyToPress.SelectedIndex = 0;
+
+        // btnAddKeyStep
+        btnAddKeyStep.Text = "⌨ เพิ่มการกดคีย์นี้";
+        btnAddKeyStep.Location = new Point(220, 93);
+        btnAddKeyStep.Size = new Size(181, 27);
+
         // lstSteps
-        lstSteps.Location = new Point(15, 93);
+        lstSteps.Location = new Point(15, 128);
         lstSteps.Size = new Size(386, 82);
         lstSteps.IntegralHeight = false;
 
         // btnRemoveStep
         btnRemoveStep.Text = "ลบจุดที่เลือก";
-        btnRemoveStep.Location = new Point(15, 183);
+        btnRemoveStep.Location = new Point(15, 218);
         btnRemoveStep.Size = new Size(120, 27);
 
         // btnClearSteps
         btnClearSteps.Text = "ล้างทั้งหมด";
-        btnClearSteps.Location = new Point(143, 183);
+        btnClearSteps.Location = new Point(143, 218);
         btnClearSteps.Size = new Size(100, 27);
 
         // lblStepCount
         lblStepCount.Text = "ทั้งหมด: 0 จุด";
-        lblStepCount.Location = new Point(255, 188);
+        lblStepCount.Location = new Point(255, 223);
         lblStepCount.Size = new Size(146, 20);
         lblStepCount.ForeColor = Color.DimGray;
         lblStepCount.TextAlign = ContentAlignment.MiddleRight;
 
         // grpClickOptions
         grpClickOptions.Text = "ขั้นตอนที่ 3 — ตั้งค่าการคลิก";
-        grpClickOptions.Location = new Point(12, 369);
+        grpClickOptions.Location = new Point(12, 404);
         grpClickOptions.Size = new Size(416, 150);
         grpClickOptions.Controls.Add(lblButton);
         grpClickOptions.Controls.Add(cmbButton);
@@ -238,7 +265,7 @@ partial class Form1
 
         // grpRepeat
         grpRepeat.Text = "ขั้นตอนที่ 4 — การทำซ้ำ";
-        grpRepeat.Location = new Point(12, 529);
+        grpRepeat.Location = new Point(12, 564);
         grpRepeat.Size = new Size(416, 72);
         grpRepeat.Controls.Add(radRepeatForever);
         grpRepeat.Controls.Add(radRepeatCount);
@@ -272,25 +299,25 @@ partial class Form1
 
         // lblStatus
         lblStatus.Text = "สถานะ: หยุด";
-        lblStatus.Location = new Point(15, 611);
+        lblStatus.Location = new Point(15, 646);
         lblStatus.Size = new Size(400, 20);
         lblStatus.Font = new Font(Font, FontStyle.Bold);
 
         // lblClickCount
-        lblClickCount.Text = "จำนวนคลิก: 0";
-        lblClickCount.Location = new Point(15, 633);
+        lblClickCount.Text = "จำนวนการทำงาน: 0";
+        lblClickCount.Location = new Point(15, 668);
         lblClickCount.Size = new Size(400, 20);
 
         // btnStart
         btnStart.Text = "▶ Start (F6)";
-        btnStart.Location = new Point(15, 663);
+        btnStart.Location = new Point(15, 698);
         btnStart.Size = new Size(196, 44);
         btnStart.BackColor = Color.FromArgb(198, 239, 206);
         btnStart.Font = new Font(Font.FontFamily, 11f, FontStyle.Bold);
 
         // btnStop
         btnStop.Text = "■ Stop (F7)";
-        btnStop.Location = new Point(221, 663);
+        btnStop.Location = new Point(221, 698);
         btnStop.Size = new Size(196, 44);
         btnStop.Enabled = false;
         btnStop.BackColor = Color.FromArgb(255, 199, 206);
@@ -298,14 +325,14 @@ partial class Form1
 
         // lblHotkeyInfo
         lblHotkeyInfo.Text = "Hotkey (ใช้ได้แม้อยู่ในเกม): F6 = Start, F7 = Stop, F8 = เพิ่มจุด";
-        lblHotkeyInfo.Location = new Point(15, 717);
+        lblHotkeyInfo.Location = new Point(15, 752);
         lblHotkeyInfo.Size = new Size(400, 20);
         lblHotkeyInfo.ForeColor = Color.Gray;
 
         // Form1
         AutoScaleMode = AutoScaleMode.Font;
         Font = new Font("Tahoma", 9f);
-        ClientSize = new Size(440, 750);
+        ClientSize = new Size(440, 785);
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         Text = "patu.v1-mouse-macro";

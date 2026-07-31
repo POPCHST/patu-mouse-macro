@@ -31,6 +31,7 @@ public partial class Form1 : Form
         btnStop.Click += (_, _) => StopMacro();
         btnCapture.Click += (_, _) => CaptureAtCursor();
         btnHelp.Click += (_, _) => ShowHelp();
+        btnAddKeyStep.Click += (_, _) => AddKeyStep();
         btnRemoveStep.Click += (_, _) => RemoveSelectedStep();
         btnClearSteps.Click += (_, _) => ClearSteps();
 
@@ -95,11 +96,29 @@ public partial class Form1 : Form
             return;
         }
 
-        _steps.Add(new MacroStep { Target = captured, DelayMs = (int)numStepDelay.Value });
+        _steps.Add(new MacroStep { ActionType = StepActionType.Click, Target = captured, DelayMs = (int)numStepDelay.Value });
         RefreshStepList();
 
         radFixedPos.Checked = true;
     }
+
+    private void AddKeyStep()
+    {
+        var key = ParseSelectedKey((string)cmbKeyToPress.SelectedItem!);
+        _steps.Add(new MacroStep { ActionType = StepActionType.KeyPress, Key = key, DelayMs = (int)numStepDelay.Value });
+        RefreshStepList();
+
+        radFixedPos.Checked = true;
+    }
+
+    private static Keys ParseSelectedKey(string text) => text switch
+    {
+        "Enter" => Keys.Enter,
+        "Space" => Keys.Space,
+        "Esc" => Keys.Escape,
+        "Tab" => Keys.Tab,
+        _ => Enum.Parse<Keys>(text)
+    };
 
     private void RemoveSelectedStep()
     {
@@ -134,6 +153,8 @@ public partial class Form1 : Form
         var fixedMode = radFixedPos.Checked;
         btnCapture.Enabled = fixedMode;
         numStepDelay.Enabled = fixedMode;
+        cmbKeyToPress.Enabled = fixedMode;
+        btnAddKeyStep.Enabled = fixedMode;
         lstSteps.Enabled = fixedMode;
         btnRemoveStep.Enabled = fixedMode;
         btnClearSteps.Enabled = fixedMode;
@@ -160,7 +181,7 @@ public partial class Form1 : Form
         _clickTimer.Start();
         lblStatus.ForeColor = Color.Green;
         lblStatus.Text = "สถานะ: กำลังทำงาน...";
-        lblClickCount.Text = "จำนวนคลิก: 0";
+        lblClickCount.Text = "จำนวนการทำงาน: 0";
         btnStart.Enabled = false;
         btnStop.Enabled = true;
     }
@@ -206,13 +227,21 @@ public partial class Form1 : Form
 
     private void ClickTimer_Tick(object? sender, EventArgs e)
     {
-        Point position;
         int delayForNextTick;
 
         if (radFixedPos.Checked)
         {
             var step = _steps[_currentStepIndex];
-            if (!step.Target.TryResolveScreenPosition(out position))
+
+            if (step.ActionType == StepActionType.KeyPress)
+            {
+                KeyboardSender.PressKey(step.Key);
+            }
+            else if (step.Target!.TryResolveScreenPosition(out var position))
+            {
+                MouseClicker.ClickAt(position, GetSelectedButton());
+            }
+            else
             {
                 StopMacro(isError: true);
                 return;
@@ -222,20 +251,12 @@ public partial class Form1 : Form
         }
         else
         {
-            position = Cursor.Position;
+            MouseClicker.ClickAt(Cursor.Position, GetSelectedButton());
             delayForNextTick = (int)numInterval.Value;
         }
 
-        var button = cmbButton.SelectedIndex switch
-        {
-            1 => MouseButtonType.Right,
-            2 => MouseButtonType.Middle,
-            _ => MouseButtonType.Left
-        };
-
-        MouseClicker.ClickAt(position, button);
         _clicksDone++;
-        lblClickCount.Text = $"จำนวนคลิก: {_clicksDone}";
+        lblClickCount.Text = $"จำนวนการทำงาน: {_clicksDone}";
 
         if (radFixedPos.Checked)
         {
@@ -260,6 +281,13 @@ public partial class Form1 : Form
 
         _clickTimer.Interval = GetNextIntervalMs(delayForNextTick);
     }
+
+    private MouseButtonType GetSelectedButton() => cmbButton.SelectedIndex switch
+    {
+        1 => MouseButtonType.Right,
+        2 => MouseButtonType.Middle,
+        _ => MouseButtonType.Left
+    };
 
     private int GetNextIntervalMs(int baseMs)
     {
