@@ -15,8 +15,8 @@ internal sealed class MacroStep
 
     public override string ToString() => ActionType switch
     {
-        StepActionType.KeyPress => $"⌨ กดคีย์ {Key} — หน่วง {DelayMs}ms",
-        _ => $"📍 \"{TrimTitle(Target!.Title)}\" ({Target.RelativeX * 100:0.0}%, {Target.RelativeY * 100:0.0}%) — หน่วง {DelayMs}ms"
+        StepActionType.KeyPress => Strings.StepKeyPress(Key.ToString(), DelayMs),
+        _ => Strings.StepClick(TrimTitle(Target!.Title), Target.RelativeX, Target.RelativeY, DelayMs)
     };
 
     private static string TrimTitle(string title) => title.Length > 18 ? title[..18] + "…" : title;

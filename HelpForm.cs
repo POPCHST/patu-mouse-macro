@@ -4,8 +4,13 @@ public sealed class HelpForm : Form
 {
     public HelpForm()
     {
-        Text = "วิธีใช้งาน patu.v1-mouse-macro";
-        ClientSize = new Size(460, 480);
+        Text = Strings.Current switch
+        {
+            AppLanguage.Thai => "วิธีใช้งาน patu.v1-mouse-macro",
+            AppLanguage.Chinese => "patu.v1-mouse-macro 使用说明",
+            _ => "How to use patu.v1-mouse-macro"
+        };
+        ClientSize = new Size(420, 340);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
@@ -15,18 +20,23 @@ public sealed class HelpForm : Form
         var textBox = new RichTextBox
         {
             Location = new Point(12, 12),
-            Size = new Size(436, 420),
+            Size = new Size(396, 280),
             ReadOnly = true,
             BorderStyle = BorderStyle.None,
             BackColor = SystemColors.Control,
-            Font = new Font(Font.FontFamily, 10f),
+            Font = new Font(Font.FontFamily, 10.5f),
             Text = BuildHelpText()
         };
 
         var btnClose = new Button
         {
-            Text = "ปิด",
-            Location = new Point(360, 440),
+            Text = Strings.Current switch
+            {
+                AppLanguage.Thai => "ปิด",
+                AppLanguage.Chinese => "关闭",
+                _ => "Close"
+            },
+            Location = new Point(320, 300),
             Size = new Size(88, 28),
             DialogResult = DialogResult.OK
         };
@@ -36,37 +46,64 @@ public sealed class HelpForm : Form
         AcceptButton = btnClose;
     }
 
-    private static string BuildHelpText() => string.Join(Environment.NewLine, new[]
+    private static string BuildHelpText() => string.Join(Environment.NewLine, Strings.Current switch
     {
-        "ขั้นตอนที่ 1 — เลือกโหมดการคลิก",
-        "• คลิกตามตำแหน่งเมาส์: เอาเมาส์ไปวางไว้ตรงไหน โปรแกรมจะคลิกตรงนั้น",
-        "• คลิกตามลำดับจุดที่ตั้งไว้: เพิ่มได้หลายจุด โปรแกรมจะคลิกวนตามลำดับที่เพิ่มไว้",
-        "",
-        "ขั้นตอนที่ 2 — ตั้งลำดับจุดคลิก (เมื่อเลือก \"คลิกตามลำดับจุดที่ตั้งไว้\")",
-        "1. ตั้ง \"หน่วงเวลาหลังจุดนี้\" ไว้ก่อน (เวลาที่จะรอ หลังคลิกจุดนี้ ก่อนไปคลิกจุดถัดไป)",
-        "2. เอาเมาส์ไปชี้ตรงปุ่มที่ต้องการในเกม แล้วกดปุ่ม \"เพิ่มจุด\" หรือกด F8",
-        "   หรือถ้าต้องการให้กดคีย์บอร์ดแทนการคลิก (เช่น Enter, F5) ให้เลือกคีย์จากช่อง",
-        "   \"หรือกดคีย์แทน\" แล้วกด \"เพิ่มการกดคีย์นี้\" — ผสมทั้งจุดคลิกและจุดกดคีย์ในลำดับเดียวกันได้",
-        "3. ทำซ้ำข้อ 1-2 เพื่อเพิ่มจุดถัดไปในลำดับ (จุดที่ 2, 3, ...)",
-        "4. รายการจุดที่เพิ่มไว้จะแสดงในลิสต์ กดเลือกแล้วกด \"ลบจุดที่เลือก\" ได้ถ้าต้องการแก้ไข",
-        "5. ตอนรัน โปรแกรมจะทำทีละจุดตามลำดับ วนกลับไปจุดแรกเมื่อทำครบทุกจุดแล้ว",
-        "",
-        "ขั้นตอนที่ 3 — ตั้งค่าการคลิก",
-        "• เลือกปุ่มเมาส์ที่จะให้คลิก (ซ้าย/ขวา/กลาง) — ใช้ปุ่มเดียวกันกับทุกจุด",
-        "• \"ทุกๆ (ms)\" ใช้เฉพาะโหมดคลิกตามตำแหน่งเมาส์เท่านั้น (โหมดลำดับจุดใช้ค่าหน่วงของแต่ละจุดแทน)",
-        "• ติ๊ก \"สุ่มเวลาคลิกเล็กน้อย\" ไว้ เพื่อให้จังหวะคลิกดูเป็นธรรมชาติ ไม่ตายตัวเป๊ะเกินไป",
-        "",
-        "ขั้นตอนที่ 4 — การทำซ้ำ",
-        "• เลือกทำซ้ำไปเรื่อยๆ จนกว่าจะกด Stop หรือกำหนดจำนวนรอบที่ต้องการ",
-        "• 1 \"รอบ\" คือการคลิกครบทุกจุดในลำดับ 1 รอบ (ถ้ามีจุดเดียว 1 รอบ = 1 คลิก เหมือนเดิม)",
-        "",
-        "เริ่ม/หยุดการทำงาน",
-        "• กด Start หรือกด F6 เพื่อเริ่มคลิกอัตโนมัติ",
-        "• กด Stop หรือกด F7 เพื่อหยุด",
-        "• ปุ่ม F6/F7/F8 ใช้ได้ตลอดแม้กำลังโฟกัสอยู่ในหน้าต่างเกม ไม่ต้องสลับกลับมาที่โปรแกรมนี้",
-        "",
-        "ข้อควรระวัง",
-        "• เกมบางเกมอาจมีข้อห้ามเรื่องการใช้โปรแกรมอัตโนมัติ/macro ควรตรวจสอบกฎของเกมก่อนใช้งาน",
-        "• ถ้าเกมรันแบบ Administrator ต้องเปิดโปรแกรมนี้แบบ Administrator ด้วย ไม่งั้นคลิกจะไม่ทำงานในเกม",
+        AppLanguage.Thai => ThaiLines,
+        AppLanguage.Chinese => ChineseLines,
+        _ => EnglishLines
     });
+
+    private static readonly string[] ThaiLines =
+    {
+        "🖱️ เริ่มใช้งานเร็ว",
+        "",
+        "1️⃣ แท็บ \"การคลิก\" — เลือกโหมด",
+        "   • ตามเมาส์: ชี้ตรงไหน คลิกตรงนั้น",
+        "   • ตามลำดับจุด: ชี้ปุ่มในเกม กด F8 เพิ่มจุด (เพิ่มได้เรื่อยๆ)",
+        "",
+        "2️⃣ แท็บ \"ตั้งค่า\" — ปรับปุ่มเมาส์ ความถี่ จำนวนรอบ",
+        "",
+        "3️⃣ กด ▶ Start (F6) เริ่ม / ■ Stop (F7) หยุด",
+        "   ใช้ได้แม้กำลังอยู่ในเกม",
+        "",
+        "💡 แท็บ \"รอผู้เล่น\": ให้รอเพื่อนเข้าห้องก่อนเริ่ม (ไม่บังคับ)",
+        "",
+        "⚠️ เช็คกฎเกมก่อนใช้ บางเกมอาจห้ามใช้โปรแกรมอัตโนมัติ",
+    };
+
+    private static readonly string[] EnglishLines =
+    {
+        "🖱️ Quick Start",
+        "",
+        "1️⃣ \"Click\" tab — choose a mode",
+        "   • By mouse: clicks wherever you point.",
+        "   • By sequence: point at a game button, press F8 to add (repeat as needed).",
+        "",
+        "2️⃣ \"Settings\" tab — set mouse button, timing, and rounds",
+        "",
+        "3️⃣ Press ▶ Start (F6) / ■ Stop (F7)",
+        "   Works even while the game has focus.",
+        "",
+        "💡 \"Wait\" tab: wait for a friend to join before starting (optional)",
+        "",
+        "⚠️ Check the game's rules first — some ban automation tools.",
+    };
+
+    private static readonly string[] ChineseLines =
+    {
+        "🖱️ 快速开始",
+        "",
+        "1️⃣ “点击”标签页 — 选择模式",
+        "   • 跟随鼠标:指向哪里就点哪里。",
+        "   • 按顺序点击:指向游戏按钮,按 F8 添加(可多次添加)。",
+        "",
+        "2️⃣ “设置”标签页 — 设置鼠标按钮、间隔、重复轮数",
+        "",
+        "3️⃣ 按 ▶ Start (F6) 开始 / ■ Stop (F7) 停止",
+        "   即使在游戏窗口中也能使用。",
+        "",
+        "💡 “等待玩家”标签页:等朋友加入房间后再开始(可选)",
+        "",
+        "⚠️ 使用前请确认游戏规则,部分游戏禁止自动化工具。",
+    };
 }

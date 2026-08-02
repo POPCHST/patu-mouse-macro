@@ -47,6 +47,15 @@ internal static class NativeMethods
     [DllImport("user32.dll", CharSet = CharSet.Auto)]
     public static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder lpString, int nMaxCount);
 
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetDC(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    public static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
+
+    [DllImport("gdi32.dll")]
+    public static extern uint GetPixel(IntPtr hdc, int x, int y);
+
     public const uint FLASHW_ALL = 0x00000003;
     public const uint FLASHW_TIMERNOFG = 0x0000000C;
 

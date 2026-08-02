@@ -36,7 +36,7 @@ internal sealed class MacroTarget
         return new MacroTarget
         {
             Handle = hwnd,
-            Title = sb.Length > 0 ? sb.ToString() : "(ไม่มีชื่อหน้าต่าง)",
+            Title = sb.Length > 0 ? sb.ToString() : Strings.UntitledWindow,
             RelativeX = (double)(screenPosition.X - origin.X) / width,
             RelativeY = (double)(screenPosition.Y - origin.Y) / height
         };

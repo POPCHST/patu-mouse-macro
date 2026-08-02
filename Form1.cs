@@ -5,6 +5,14 @@ namespace MouseMacro;
 
 public partial class Form1 : Form
 {
+    private enum MacroStatusKind
+    {
+        Idle,
+        Running,
+        Waiting,
+        Error
+    }
+
     private const int HotkeyStart = 1;
     private const int HotkeyStop = 2;
     private const int HotkeyCapture = 3;
@@ -12,8 +20,11 @@ public partial class Form1 : Form
     private const int JitterPercent = 15;
 
     private readonly System.Windows.Forms.Timer _clickTimer = new();
+    private readonly System.Windows.Forms.Timer _waitTimer = new() { Interval = 1000 };
     private readonly List<MacroStep> _steps = new();
     private readonly Random _random = new();
+    private PresenceCheckPoint? _presenceCheckPoint;
+    private MacroStatusKind _statusKind = MacroStatusKind.Idle;
     private int _currentStepIndex;
     private int _completedPasses;
     private int _clicksDone;
@@ -26,14 +37,17 @@ public partial class Form1 : Form
         Text = $"{Text} v{Application.ProductVersion}";
 
         _clickTimer.Tick += ClickTimer_Tick;
+        _waitTimer.Tick += WaitTimer_Tick;
 
         btnStart.Click += (_, _) => StartMacro();
         btnStop.Click += (_, _) => StopMacro();
         btnCapture.Click += (_, _) => CaptureAtCursor();
         btnHelp.Click += (_, _) => ShowHelp();
+        cmbLanguage.SelectedIndexChanged += (_, _) => SetLanguageFromSelector();
         btnAddKeyStep.Click += (_, _) => AddKeyStep();
         btnRemoveStep.Click += (_, _) => RemoveSelectedStep();
         btnClearSteps.Click += (_, _) => ClearSteps();
+        btnCapturePresence.Click += (_, _) => CapturePresencePoint();
 
         radFixedPos.CheckedChanged += UpdatePositionControlsEnabled;
         radRepeatCount.CheckedChanged += (_, _) => numRepeatCount.Enabled = radRepeatCount.Checked;
@@ -87,12 +101,103 @@ public partial class Form1 : Form
         help.ShowDialog(this);
     }
 
+    private void SetLanguageFromSelector()
+    {
+        Strings.Current = cmbLanguage.SelectedIndex switch
+        {
+            1 => AppLanguage.English,
+            2 => AppLanguage.Chinese,
+            _ => AppLanguage.Thai
+        };
+        ApplyLanguage();
+    }
+
+    private void ApplyLanguage()
+    {
+        btnHelp.Text = Strings.HelpButton;
+
+        tabClick.Text = Strings.TabClick;
+        tabSettings.Text = Strings.TabSettings;
+        tabPresence.Text = Strings.TabPresence;
+
+        grpMode.Text = Strings.ModeGroupTitle;
+        radCurrentPos.Text = Strings.ModeCurrentPos;
+        radFixedPos.Text = Strings.ModeFixedPos;
+
+        grpSequence.Text = Strings.SequenceGroupTitle;
+        btnCapture.Text = Strings.CaptureButton;
+        lblStepDelay.Text = Strings.StepDelayLabel;
+        lblKeyPress.Text = Strings.KeyPressLabel;
+        btnAddKeyStep.Text = Strings.AddKeyStepButton;
+        btnRemoveStep.Text = Strings.RemoveStepButton;
+        btnClearSteps.Text = Strings.ClearStepsButton;
+
+        grpClick.Text = Strings.ClickSettingsGroupTitle;
+        lblButton.Text = Strings.MouseButtonLabel;
+        var selectedButtonIndex = cmbButton.SelectedIndex < 0 ? 0 : cmbButton.SelectedIndex;
+        cmbButton.Items.Clear();
+        cmbButton.Items.AddRange(Strings.MouseButtonItems);
+        cmbButton.SelectedIndex = selectedButtonIndex;
+        lblInterval.Text = Strings.IntervalLabel;
+        lblIntervalHint.Text = Strings.IntervalHint;
+        chkJitter.Text = Strings.JitterCheckbox;
+
+        grpRepeat.Text = Strings.RepeatGroupTitle;
+        radRepeatForever.Text = Strings.RepeatForever;
+        radRepeatCount.Text = Strings.RepeatCount;
+        lblTimes.Text = Strings.RoundsLabel;
+
+        lblPresenceHint.Text = Strings.PresenceGroupTitle;
+        btnCapturePresence.Text = Strings.CapturePresenceButton;
+        lblPresenceInfo.Text = _presenceCheckPoint is null
+            ? Strings.PresenceNotSet
+            : Strings.PresenceSet(_presenceCheckPoint.TargetTitle);
+        chkWaitForPlayer.Text = Strings.WaitForPlayerCheckbox;
+
+        lblClickCount.Text = Strings.ActionsDone(_clicksDone);
+        btnStart.Text = Strings.StartButton;
+        btnStop.Text = Strings.StopButton;
+        lblHotkeyInfo.Text = Strings.HotkeyInfo;
+
+        RenderStatus();
+        RefreshStepList();
+    }
+
+    private void SetStatus(MacroStatusKind kind)
+    {
+        _statusKind = kind;
+        RenderStatus();
+    }
+
+    private void RenderStatus()
+    {
+        switch (_statusKind)
+        {
+            case MacroStatusKind.Running:
+                lblStatus.ForeColor = Color.Green;
+                lblStatus.Text = Strings.StatusRunning;
+                break;
+            case MacroStatusKind.Waiting:
+                lblStatus.ForeColor = Color.DarkOrange;
+                lblStatus.Text = Strings.StatusWaiting;
+                break;
+            case MacroStatusKind.Error:
+                lblStatus.ForeColor = Color.Red;
+                lblStatus.Text = Strings.StatusError;
+                break;
+            default:
+                lblStatus.ForeColor = SystemColors.ControlText;
+                lblStatus.Text = Strings.StatusStopped;
+                break;
+        }
+    }
+
     private void CaptureAtCursor()
     {
         var captured = MacroTarget.CaptureAt(Cursor.Position);
         if (captured is null)
         {
-            lblStepCount.Text = "จับตำแหน่งไม่สำเร็จ ลองใหม่";
+            lblStepCount.Text = Strings.CaptureFailed;
             return;
         }
 
@@ -120,6 +225,20 @@ public partial class Form1 : Form
         _ => Enum.Parse<Keys>(text)
     };
 
+    private void CapturePresencePoint()
+    {
+        var captured = MacroTarget.CaptureAt(Cursor.Position);
+        if (captured is null || !captured.TryResolveScreenPosition(out var screenPosition))
+        {
+            lblPresenceInfo.Text = Strings.CaptureFailed;
+            return;
+        }
+
+        var baselineColor = PixelSampler.GetPixelColor(screenPosition);
+        _presenceCheckPoint = new PresenceCheckPoint(captured, baselineColor);
+        lblPresenceInfo.Text = Strings.PresenceSet(captured.Title);
+    }
+
     private void RemoveSelectedStep()
     {
         if (lstSteps.SelectedIndex < 0)
@@ -145,7 +264,7 @@ public partial class Form1 : Form
             lstSteps.Items.Add(step.ToString()!);
         }
 
-        lblStepCount.Text = $"ทั้งหมด: {_steps.Count} จุด";
+        lblStepCount.Text = Strings.TotalPoints(_steps.Count);
     }
 
     private void UpdatePositionControlsEnabled(object? sender, EventArgs e)
@@ -169,21 +288,50 @@ public partial class Form1 : Form
 
         if (radFixedPos.Checked && _steps.Count == 0)
         {
-            lblStepCount.Text = "กรุณาเพิ่มจุดคลิกก่อน (เอาเมาส์ชี้ปุ่มในเกม แล้วกด F8)";
+            lblStepCount.Text = Strings.NeedStepsFirst;
+            return;
+        }
+
+        if (chkWaitForPlayer.Checked && _presenceCheckPoint is null)
+        {
+            lblPresenceInfo.Text = Strings.NeedPresencePointFirst;
             return;
         }
 
         _isRunning = true;
+        btnStart.Enabled = false;
+        btnStop.Enabled = true;
+
+        if (chkWaitForPlayer.Checked && !_presenceCheckPoint!.HasPlayerJoined())
+        {
+            SetStatus(MacroStatusKind.Waiting);
+            _waitTimer.Start();
+            return;
+        }
+
+        BeginClicking();
+    }
+
+    private void WaitTimer_Tick(object? sender, EventArgs e)
+    {
+        if (!_presenceCheckPoint!.HasPlayerJoined())
+        {
+            return;
+        }
+
+        _waitTimer.Stop();
+        BeginClicking();
+    }
+
+    private void BeginClicking()
+    {
         _clicksDone = 0;
         _currentStepIndex = 0;
         _completedPasses = 0;
         _clickTimer.Interval = GetNextIntervalMs(radFixedPos.Checked ? _steps[0].DelayMs : (int)numInterval.Value);
         _clickTimer.Start();
-        lblStatus.ForeColor = Color.Green;
-        lblStatus.Text = "สถานะ: กำลังทำงาน...";
-        lblClickCount.Text = "จำนวนการทำงาน: 0";
-        btnStart.Enabled = false;
-        btnStop.Enabled = true;
+        SetStatus(MacroStatusKind.Running);
+        lblClickCount.Text = Strings.ActionsDone(0);
     }
 
     private void StopMacro(bool isError = false)
@@ -195,20 +343,19 @@ public partial class Form1 : Form
 
         _isRunning = false;
         _clickTimer.Stop();
+        _waitTimer.Stop();
         btnStart.Enabled = true;
         btnStop.Enabled = false;
 
         if (isError)
         {
-            lblStatus.ForeColor = Color.Red;
-            lblStatus.Text = "⚠ หยุดทำงาน: ไม่พบหน้าต่างเกมที่จับตำแหน่งไว้ (ปิดไปแล้ว?) — กด F8 จับตำแหน่งใหม่";
+            SetStatus(MacroStatusKind.Error);
             FlashTaskbar();
             SystemSounds.Exclamation.Play();
         }
         else
         {
-            lblStatus.ForeColor = SystemColors.ControlText;
-            lblStatus.Text = "สถานะ: หยุดแล้ว";
+            SetStatus(MacroStatusKind.Idle);
         }
     }
 
@@ -256,7 +403,7 @@ public partial class Form1 : Form
         }
 
         _clicksDone++;
-        lblClickCount.Text = $"จำนวนการทำงาน: {_clicksDone}";
+        lblClickCount.Text = Strings.ActionsDone(_clicksDone);
 
         if (radFixedPos.Checked)
         {
